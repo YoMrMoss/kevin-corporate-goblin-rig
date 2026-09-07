@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Kevin Corporate Goblin — Production Rig</title>
+  <style>
+    *{box-sizing:border-box}html,body{margin:0;min-height:100%;font-family:system-ui,sans-serif;background:#10151f;color:#eef2f7}
+    body.obs{background:#ff00ff;overflow:hidden}.layout{display:grid;grid-template-columns:minmax(520px,760px) 360px;gap:24px;max-width:1180px;margin:auto;padding:24px}
+    .stage{position:relative;aspect-ratio:1;overflow:hidden;background:#ff00ff}.rig{position:relative;width:100%;aspect-ratio:1;overflow:hidden}.layer{position:absolute;pointer-events:none;object-fit:contain;will-change:transform,opacity}
+    #base{inset:0;width:100%;height:100%;z-index:1}#eyes{left:30%;top:19%;width:40%;height:18%;z-index:3;transition:opacity 45ms linear}
+    #typingA{left:var(--key-x);top:var(--key-y);width:var(--key-size);height:20%;transform-origin:18% 32%;z-index:4;transform:translate(0,0) rotate(0);opacity:1}
+    .typing #typingA{animation:key-tap 180ms ease-out 1}
+    @keyframes key-tap{0%{transform:translate(0,0) rotate(0)}45%{transform:translate(4px,var(--tap-distance)) rotate(4deg)}100%{transform:translate(0,0) rotate(0)}}
+    #mouseHand,#mouseHandClick{left:var(--mouse-x);top:var(--mouse-y);width:var(--mouse-size);height:25%;z-index:4;transform-origin:62% 58%}
+    #mouseHandClick{opacity:0}.mouse-clicking #mouseHand{opacity:0}.mouse-clicking #mouseHandClick{opacity:1}
+    #mouth{position:absolute;left:var(--mouth-x);top:var(--mouth-y);width:var(--mouth-size);height:9%;z-index:5;pointer-events:none}
+    #mouth svg{display:none;width:100%;height:100%}#mouth[data-shape="slight"] .slight,#mouth[data-shape="wide"] .wide{display:block}
+    .panel{background:#1b2432;border:1px solid #334155;border-radius:16px;padding:20px}.panel h1{margin:0 0 6px;color:#b6ef5e}.panel h2{font-size:15px;margin:22px 0 8px;color:#d9f99d}.panel p{color:#bac5d4;font-size:13px}.row{display:grid;grid-template-columns:1fr 70px;gap:10px;align-items:center;margin:8px 0}.row input{width:100%}.row output{text-align:right;color:#bef264}.buttons{display:grid;grid-template-columns:1fr 1fr;gap:8px}.buttons button,.primary{border:0;border-radius:8px;padding:10px;background:#a3e635;color:#18220a;font-weight:700;cursor:pointer}.buttons button.secondary{background:#334155;color:#f8fafc}.primary[aria-pressed="true"]{background:#f59e0b;color:#1f1300}.calibration-content[hidden]{display:none}.meter{height:9px;background:#334155;border-radius:10px;overflow:hidden;margin:8px 0}.meter i{display:block;height:100%;width:0;background:#a3e635}.status{min-height:18px}.obs .layout{display:block;padding:0;margin:0;width:100vw;height:100vh}.obs .stage{position:fixed;inset:0;width:100vw;height:100vh;aspect-ratio:auto;background:#ff00ff!important}.obs .rig{width:min(100vw,100vh);height:min(100vw,100vh)}.obs .panel{display:none}@media(max-width:900px){.layout{grid-template-columns:1fr}}
+  </style>
+</head>
+<body>
+<main class="layout">
+  <section class="stage" id="stage">
+   <div class="rig" id="rig">
+    <img class="layer" id="base" src="assets/kevin-base.png?v=7" alt="Kevin">
+    <img class="layer" id="eyes" src="assets/eyes-open.png?v=7" alt="">
+    <img class="layer" id="typingA" src="assets/typing-hand.png?v=7" alt="">
+    <img class="layer" id="mouseHand" src="assets/mouse-hand.png?v=7" alt="">
+    <img class="layer" id="mouseHandClick" src="assets/mouse-hand-click.png?v=7" alt="">
+    <div id="mouth" data-shape="closed">
+      <svg class="slight" viewBox="0 0 180 80"><path d="M20 27 Q90 12 160 27 Q90 58 20 27Z" fill="#261515" stroke="#172016" stroke-width="8"/><path d="M48 28h30v14H48zm54 0h30v14h-30z" fill="#f4f1da"/></svg>
+      <svg class="wide" viewBox="0 0 180 80"><path d="M12 13 Q90 0 168 13 L160 66 Q90 84 20 66Z" fill="#251313" stroke="#172016" stroke-width="8"/><path d="M31 14h38v18H31zm80 0h38v18h-38z" fill="#f4f1da"/><path d="M45 61h90v9H45z" fill="#a35148"/></svg>
+    </div>
+   </div>
+  </section>
+  <aside class="panel">
+    <h1>Kevin Rig Controls</h1><p>Changes save automatically in this browser.</p>
+    <button class="primary" id="mic">Enable microphone</button><div class="meter"><i id="meter"></i></div><p class="status" id="status">Microphone disabled.</p>
+    <p class="status" id="inputStatus">Checking Windows input capture…</p>
+    <button class="primary" id="calibrationToggle" aria-pressed="false">Enable calibration mode</button>
+    <div class="calibration-content" id="calibrationPanel" hidden>
+      <h2>Calibration</h2><div id="controls"></div>
+      <h2>Test each animation</h2>
+      <div class="buttons"><button data-test="blink">Blink</button><button data-test="talk">Talk</button><button data-test="type">Type</button><button data-test="mouse">Mouse move</button><button data-test="click">Mouse click</button><button class="secondary" id="reset">Reset positions</button></div>
+    </div>
+    <p>OBS URL: <strong>http://localhost:8877/?obs=1</strong></p>
+  </aside>
+</main>
+<script>
+const $=id=>document.getElementById(id),obs=new URLSearchParams(location.search).has('obs');if(obs)document.body.classList.add('obs');
+const defaults={keyX:9,keyY:74,keySize:31,mouseX:72,mouseY:70,mouseSize:26,mouthX:40.7,mouthY:37,mouthSize:18,voice:10,mouseRange:24,tapDistance:12};
+const schema=[['keyX','Typing hand X',0,45,.5,'%'],['keyY','Typing hand Y',55,88,.5,'%'],['keySize','Typing hand size',15,45,.5,'%'],['mouseX','Mouse hand X',45,88,.5,'%'],['mouseY','Mouse hand Y',50,88,.5,'%'],['mouseSize','Mouse hand size',15,42,.5,'%'],['mouthX','Mouth X',25,60,.2,'%'],['mouthY','Mouth Y',25,50,.2,'%'],['mouthSize','Mouth size',8,28,.2,'%'],['voice','Voice sensitivity',2,40,1,''],['mouseRange','Mouse range',4,50,1,'px'],['tapDistance','Typing tap distance',4,24,1,'px']];
+let settings={...defaults,...JSON.parse(localStorage.getItem('kevinRigSettings')||'{}')},audioContext,audioStream,lastVoiceSent=0,lastVoiceLevel=0,mousePX=0,mousePY=0,lastKeyboardSeq=null,lastMouseSeq=null,clickUntil=0,typingTimer,mouthHoldUntil=0,mouthShape='closed',lastGoodPoll=performance.now(),test={};
+function apply(save=true){const s=document.documentElement.style;s.setProperty('--key-x',settings.keyX+'%');s.setProperty('--key-y',settings.keyY+'%');s.setProperty('--key-size',settings.keySize+'%');s.setProperty('--mouse-x',settings.mouseX+'%');s.setProperty('--mouse-y',settings.mouseY+'%');s.setProperty('--mouse-size',settings.mouseSize+'%');s.setProperty('--mouth-x',settings.mouthX+'%');s.setProperty('--mouth-y',settings.mouthY+'%');s.setProperty('--mouth-size',settings.mouthSize+'%');s.setProperty('--tap-distance',settings.tapDistance+'px');if(save){localStorage.setItem('kevinRigSettings',JSON.stringify(settings));if(!obs)fetch('/settings',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(settings)}).catch(()=>{})}}
+function buildControls(){for(const [key,label,min,max,step,unit] of schema){const row=document.createElement('label');row.className='row';row.innerHTML=`<span>${label}<input type="range" min="${min}" max="${max}" step="${step}" value="${settings[key]}"></span><output>${settings[key]}${unit}</output>`;const input=row.querySelector('input'),out=row.querySelector('output');input.oninput=()=>{settings[key]=Number(input.value);out.textContent=input.value+unit;apply()};$('controls').append(row)}}buildControls();apply();
+function sendVoice(level){const now=performance.now();if(now-lastVoiceSent<45)return;lastVoiceSent=now;fetch('/voice',{method:'POST',keepalive:true,headers:{'Content-Type':'application/json'},body:JSON.stringify({level})}).catch(()=>{})}
+function acceptVoice(level){lastVoiceLevel=level;$('meter').style.width=Math.min(level*4,100)+'%';sendVoice(level);if(!obs)setMouth(level,true)}
+async function microphone(){try{if(audioStream)audioStream.getTracks().forEach(t=>t.stop());if(audioContext)await audioContext.close();audioStream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:true,autoGainControl:true}});audioContext=new AudioContext();await audioContext.resume();const source=audioContext.createMediaStreamSource(audioStream),track=audioStream.getAudioTracks()[0];track.onended=()=>{acceptVoice(0);$('status').textContent='Microphone disconnected. Enable it again to restore voice.'};if(audioContext.audioWorklet){const code=`class KevinVoiceMeter extends AudioWorkletProcessor{constructor(){super();this.sum=0;this.count=0;this.blocks=0}process(inputs){const c=inputs[0]&&inputs[0][0];if(c){for(const v of c){this.sum+=v*v;this.count++}if(++this.blocks>=16){this.port.postMessage(Math.sqrt(this.sum/Math.max(1,this.count))*100);this.sum=0;this.count=0;this.blocks=0}}return true}}registerProcessor('kevin-voice-meter',KevinVoiceMeter)`;const url=URL.createObjectURL(new Blob([code],{type:'application/javascript'}));await audioContext.audioWorklet.addModule(url);URL.revokeObjectURL(url);const meter=new AudioWorkletNode(audioContext,'kevin-voice-meter'),silent=audioContext.createGain();silent.gain.value=0;meter.port.onmessage=e=>acceptVoice(Number(e.data)||0);source.connect(meter).connect(silent).connect(audioContext.destination)}else{const processor=audioContext.createScriptProcessor(1024,1,1),silent=audioContext.createGain();silent.gain.value=0;processor.onaudioprocess=e=>{const c=e.inputBuffer.getChannelData(0);let sum=0;for(const v of c)sum+=v*v;acceptVoice(Math.sqrt(sum/c.length)*100)};source.connect(processor).connect(silent).connect(audioContext.destination)}$('status').textContent='Microphone active; audio-thread relay connected to OBS.';$('mic').textContent='Microphone enabled'}catch(e){$('status').textContent='Microphone unavailable: '+e.message}}
+$('mic').onclick=microphone;
+document.addEventListener('visibilitychange',()=>{if(!document.hidden&&audioContext&&audioContext.state==='suspended')audioContext.resume()});
+function setMouth(level,fresh=true){const now=performance.now(),slight=settings.voice,wide=settings.voice*1.75;if(fresh&&level>slight){mouthHoldUntil=now+150;mouthShape=level>wide?'wide':'slight'}else if(level>wide*.88){mouthHoldUntil=now+150;mouthShape='wide'}else if(level>slight*.82){mouthHoldUntil=now+130;mouthShape='slight'}else if(now>mouthHoldUntil)mouthShape='closed';$('mouth').dataset.shape=mouthShape}
+function blink(){const e=$('eyes');e.style.opacity='.42';setTimeout(()=>e.style.opacity='0',55);setTimeout(()=>e.style.opacity='.42',125);setTimeout(()=>e.style.opacity='1',180);setTimeout(blink,2800+Math.random()*4200)}setTimeout(blink,1800);
+function triggerTyping(){const stage=$('stage');stage.classList.remove('typing');void stage.offsetWidth;stage.classList.add('typing');clearTimeout(typingTimer);typingTimer=setTimeout(()=>stage.classList.remove('typing'),190)}
+async function poll(){try{const controller=new AbortController(),timeout=setTimeout(()=>controller.abort(),700),response=await fetch('/state',{cache:'no-store',signal:controller.signal});clearTimeout(timeout);const s=await response.json(),now=Date.now()/1000,moving=now-s.mouse_move<.22;lastGoodPoll=performance.now();if(lastKeyboardSeq===null)lastKeyboardSeq=s.keyboard_seq||0;else if((s.keyboard_seq||0)!==lastKeyboardSeq){lastKeyboardSeq=s.keyboard_seq||0;triggerTyping()}if(lastMouseSeq===null)lastMouseSeq=s.mouse_seq||0;else if((s.mouse_seq||0)!==lastMouseSeq){lastMouseSeq=s.mouse_seq||0;clickUntil=performance.now()+190}if(obs&&s.settings&&Object.keys(s.settings).length){settings={...defaults,...s.settings};apply(false)}const targetX=(moving?s.mouse_dx*settings.mouseRange:0)+(test.mouse?settings.mouseRange:0),targetY=(moving?s.mouse_dy*settings.mouseRange*.65:0);mousePX+=(targetX-mousePX)*.24;mousePY+=(targetY-mousePY)*.24;const pressed=Boolean(s.mouse_down)||performance.now()<clickUntil||test.click,clickY=pressed?7:0,mouseTransform=`translate(${mousePX}px,${mousePY+clickY}px) rotate(${mousePX*.1}deg)`;$('rig').classList.toggle('mouse-clicking',pressed);$('mouseHand').style.transform=mouseTransform;$('mouseHandClick').style.transform=mouseTransform;if(!obs){const alive=Date.now()/1000-(s.input_heartbeat||0)<2,voiceLive=Date.now()/1000-(s.voice_updated||0)<1;$('inputStatus').textContent=`${alive?'●':'○'} ${s.input_backend||'Input starting'} · keys ${s.keyboard_seq||0} · clicks ${s.mouse_seq||0} · voice ${voiceLive?'linked':'waiting'}`;$('inputStatus').style.color=alive?'#bef264':'#fca5a5'}if(obs)setMouth(s.voice_level||0,(Date.now()/1000-(s.voice_updated||0))<.65)}catch(e){if(performance.now()-lastGoodPoll>900){$('stage').classList.remove('typing');$('rig').classList.remove('mouse-clicking');mousePX=mousePY=0;setMouth(0,false)}if(!obs){$('inputStatus').textContent='○ Input service unavailable';$('inputStatus').style.color='#fca5a5'}}setTimeout(poll,40)}poll();
+document.querySelectorAll('[data-test]').forEach(b=>b.onclick=()=>{const k=b.dataset.test;if(k==='blink'){const e=$('eyes');e.style.opacity='0';setTimeout(()=>e.style.opacity='1',180);return}if(k==='talk'){setMouth(settings.voice*2);setTimeout(()=>setMouth(0),900);return}if(k==='type'){triggerTyping();return}test[k]=true;setTimeout(()=>test[k]=false,900)});
+$('reset').onclick=()=>{settings={...defaults};localStorage.removeItem('kevinRigSettings');location.reload()};
+$('calibrationToggle').onclick=()=>{const panel=$('calibrationPanel'),open=panel.hasAttribute('hidden');panel.toggleAttribute('hidden',!open);$('calibrationToggle').setAttribute('aria-pressed',String(open));$('calibrationToggle').textContent=open?'Disable calibration mode':'Enable calibration mode'};
+addEventListener('storage',e=>{if(e.key==='kevinRigSettings'){settings={...defaults,...JSON.parse(e.newValue||'{}')};apply()}});
+</script>
+</body></html>
